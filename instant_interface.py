@@ -4,6 +4,10 @@ from joblib import Parallel, delayed
 import time
 import MDAnalysis
 
+selection_key = "resname TAS"
+DCD = "trajectory.xtc"
+PSF = "beta.psf"
+
 def write_pdb(data,fr):
 	print 'writing pdb...'
 	outfile = open("II_"+str(fr)+".pdb","w")
@@ -484,27 +488,12 @@ def MC_table(gridv, gridp, rhoc, trip):
 
 	return [ntri, trip]
 
-def vertex_loop(n):
-	epsilon = 0.000001
-	vertexflag = 0
-	for n in range(II):
-		vertexdist = 0.0
-		vertexdist += (trip[t][m][0] - ii_coor[n][0]) * (trip[t][m][0] - ii_coor[n][0])
-		vertexdist += (trip[t][m][1] - ii_coor[n][1]) * (trip[t][m][1] - ii_coor[n][1])
-		vertexdist += (trip[t][m][2] - ii_coor[n][2]) * (trip[t][m][2] - ii_coor[n][2])
-		if vertexdist < epsilon:
-			vertexflag = 1
-			break
-	return vertexflag
-
 def marching_cubes(rho,pos): 
 	print "---> running marching cubes. this might take a while..."
 	# load some more variables into global namespace
-	global ii_coor
-	global trip
-	global II
-	global t
-	global m
+	#global ii_coor
+	#global trip
+	#global II
 
 	II = 2500
 	epsilon = 0.000001
@@ -603,30 +592,25 @@ def marching_cubes(rho,pos):
 		print i, "/", n_grid_pts[0]
 	return ii_coor
 
-def chandler_willard():
-	#DCD = "sample.dcd"
-	#PSF = "sample.psf"
-	DCD = "../trajectory.xtc"
-	PSF = "../beta.psf"
-	selection_key = "resname TAS"
-
+def willard_chandler(selection_key,DCD,PSF):
 	[nframes, positions] = extract_traj_info(PSF,DCD,selection_key)
 	# defines global variables: n_heavy_atoms, pbc
-
 	global pos
 
 	for fr in range(nframes):
+
 		print 'working on frame', fr+1, ' of', nframes
 		pos=positions[fr] 
+
 		coarse_grain_start = time.time()
-		rho = compute_coarse_grain_density(pos)
-		# defines global variables: n_grid_pts, grid_spacing
+		rho = compute_coarse_grain_density(pos) # defines global variables: n_grid_pts, grid_spacing
+		
 		coarse_grain_stop = time.time()
 		print 'elapsed time to compute coarse grain density:', coarse_grain_stop-coarse_grain_start
 
 		marching_cubes_start = time.time()
-		interface_coors = marching_cubes(rho,pos)
-		# defines global variables: heavy_ncube, cube_coor
+		interface_coors = marching_cubes(rho,pos) # defines global variables: cube_coor
+		
 		marching_cubes_stop = time.time()
 		print 'elapsed time to run marching cubes:', marching_cubes_stop-marching_cubes_start
 
@@ -638,4 +622,4 @@ def chandler_willard():
 global scale
 scale = 10.0
 
-chandler_willard()
+willard_chandler(selection_key,DCD,PSF)
