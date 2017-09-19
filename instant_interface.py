@@ -94,6 +94,13 @@ def extract_traj_info(PSF,DCD,selection_key):
         pbc = uni.dimensions[0:3]					# retrieve periodic bounds
         return [nframes,positions,water_pos]
 
+def shift_back(interface_coors,fr):
+	global box_shift
+	shift = np.zeros((interface_coors.shape))
+	for i in range(interface_coors.shape[0]):
+		shift[i] = [interface_coors[i][j]-box_shift[fr][j] for j in range(3)]
+	return shift
+
 def run_emaps(fr):
 	"""
 	This function takes in a set of II points for each frame and calculates the LREP for each frame using the
@@ -125,6 +132,7 @@ def run_emaps(fr):
 	if verbose >= 2:
 		print 'elapsed time to run marching cubes:', marching_cubes_stop-marching_cubes_start
 	
+	interface_coors = shift_back(interface_coors,fr)
 	write_pdb(interface_coors,fr)
 	return 0
 
